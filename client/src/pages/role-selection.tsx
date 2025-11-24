@@ -43,8 +43,8 @@ export default function RoleSelection() {
     try {
       await apiRequest("POST", "/api/auth/set-role", { role: roleId });
       
-      // Invalidate and refetch user data to update role
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // Invalidate ALL queries to clear cache when role changes
+      await queryClient.invalidateQueries();
       
       toast({
         title: "Rol establecido",
