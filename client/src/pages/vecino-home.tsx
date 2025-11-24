@@ -258,10 +258,22 @@ export default function VecinoHome() {
       <Dialog open={!!selectedQr} onOpenChange={(open) => !open && setSelectedQr(null)}>
         <DialogContent className="max-w-md" data-testid="dialog-qr-details">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Código QR</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">
+              {selectedQr?.isUsed === "true" ? "Código Usado" : "Código QR Activo"}
+            </DialogTitle>
           </DialogHeader>
           {selectedQr && (
             <div className="space-y-6">
+              {selectedQr.isUsed === "true" && (
+                <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md p-4">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 font-semibold">
+                    ⚠️ Este código ya ha sido utilizado
+                  </p>
+                  <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                    No puedes usar este código nuevamente. Genera uno nuevo si necesitas acceso.
+                  </p>
+                </div>
+              )}
               <div className="flex justify-center bg-white p-8 rounded-lg">
                 <QRCodeSVG value={selectedQr.code} size={256} data-testid="qr-code-display" />
               </div>
@@ -280,29 +292,31 @@ export default function VecinoHome() {
                     <p className="text-base" data-testid="text-qr-description">{selectedQr.description}</p>
                   </div>
                 )}
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Código para el Guardia</p>
-                  <div className="flex items-center gap-2">
-                    <Input 
-                      readOnly
-                      value={selectedQr.code}
-                      data-testid="input-qr-code"
-                      className="text-xs font-mono"
-                    />
-                    <Button 
-                      size="icon" 
-                      onClick={handleCopyCode}
-                      data-testid="button-copy-code"
-                      className="flex-shrink-0"
-                    >
-                      {copiedCode ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
+                {selectedQr.isUsed !== "true" && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Código para el Guardia</p>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        readOnly
+                        value={selectedQr.code}
+                        data-testid="input-qr-code"
+                        className="text-xs font-mono"
+                      />
+                      <Button 
+                        size="icon" 
+                        onClick={handleCopyCode}
+                        data-testid="button-copy-code"
+                        className="flex-shrink-0"
+                      >
+                        {copiedCode ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div>
                   <p className="text-sm text-muted-foreground">Creado</p>
                   <p className="text-sm font-mono">
