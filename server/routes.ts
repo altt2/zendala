@@ -214,6 +214,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User management endpoints (public for creation, admin for listing)
+  app.post("/api/users/create", async (req: any, res) => {
+    try {
+      const { username, firstName, lastName, password, adminPassword, role } = req.body;
+
+      if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+        return res.status(401).json({ message: "Invalid admin password" });
+      }
+
+      if (!username || !firstName || !lastName || !password || !role) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      if (!["vecino", "guardia", "administrador"].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+
+      const user = await storage.createLocalUser({
+        username,
+        firstName,
+        lastName,
+        password,
+        role,
+      });
+
+      res.json({
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      });
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.get("/api/users", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(
+        users.map((u) => ({
+          id: u.id,
+          username: u.username,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          role: u.role,
+          createdAt: u.createdAt,
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Login from "@/pages/login";
+import CrearUsuario from "@/pages/crear-usuario";
 import RoleSelection from "@/pages/role-selection";
 import VecinoHome from "@/pages/vecino-home";
 import GuardiaHome from "@/pages/guardia-home";
@@ -29,6 +30,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Login} />
+        <Route path="/crear-usuario" component={CrearUsuario} />
         <Route path="*">
           <Redirect to="/" />
         </Route>

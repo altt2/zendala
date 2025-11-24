@@ -15,8 +15,11 @@ import { randomUUID } from "crypto";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserRole(userId: string, role: string): Promise<User>;
+  createLocalUser(data: { username: string; firstName: string; lastName: string; password: string; role: string }): Promise<User>;
+  getAllUsers(): Promise<User[]>;
   createQrCode(qrCode: InsertQrCode): Promise<QrCode>;
   getQrCodesByUser(userId: string): Promise<QrCode[]>;
   getQrCodeByCode(code: string): Promise<QrCode | undefined>;
@@ -29,6 +32,11 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
 
@@ -54,6 +62,31 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
+  }
+
+  async createLocalUser(data: { username: string; firstName: string; lastName: string; password: string; role: string }): Promise<User> {
+    // Hash password (in production, use bcrypt)
+    const crypto = await import("crypto");
+    const passwordHash = crypto.createHash("sha256").update(data.password).digest("hex");
+
+    const [user] = await db
+      .insert(users)
+      .values({
+        username: data.username,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        passwordHash,
+        role: data.role,
+      })
+      .returning();
+    return user;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .orderBy(users.createdAt);
   }
 
   async createQrCode(qrCodeData: InsertQrCode): Promise<QrCode> {

@@ -143,6 +143,30 @@ export default function Login() {
               {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
             </Button>
           </form>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">o</span>
+            </div>
+          </div>
+
+          {/* Create User Button */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              // This will be set up in App.tsx to navigate to /crear-usuario
+              window.location.pathname = "/crear-usuario";
+            }}
+            data-testid="button-create-user-link"
+          >
+            Crear nuevo usuario
+          </Button>
         </div>
       </Card>
     </div>
