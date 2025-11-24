@@ -150,7 +150,7 @@ export default function GuardiaHome() {
     return () => {
       clearTimeout(timeout);
     };
-  }, [scanning, validateQrMutation, toast]);
+  }, [scanning]);
 
   // Cleanup scanner resources
   useEffect(() => {
