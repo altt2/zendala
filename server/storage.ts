@@ -98,6 +98,9 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: accessLogs.id,
         accessedAt: accessLogs.accessedAt,
+        accessType: accessLogs.accessType,
+        vehiclePlates: accessLogs.vehiclePlates,
+        notes: accessLogs.notes,
         qrCode: {
           visitorName: qrCodes.visitorName,
           visitorType: qrCodes.visitorType,
