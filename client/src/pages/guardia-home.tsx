@@ -10,6 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { LogOut, CheckCircle, XCircle, Camera, Keyboard } from "lucide-react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import logoUrl from "@assets/generated_images/zendala_residential_community_logo.png";
@@ -38,6 +46,10 @@ export default function GuardiaHome() {
   const [manualCode, setManualCode] = useState("");
   const [validationResult, setValidationResult] = useState<QrValidationResult | null>(null);
   const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+  const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [accessType, setAccessType] = useState<"pie" | "vehiculo">("pie");
+  const [vehiclePlates, setVehiclePlates] = useState("");
+  const [notesText, setNotesText] = useState("");
 
 
   const validateQrMutation = useMutation({
@@ -74,8 +86,13 @@ export default function GuardiaHome() {
   });
 
   const grantAccessMutation = useMutation({
-    mutationFn: async (qrCodeId: string) => {
-      const res = await apiRequest("POST", "/api/access-logs", { qrCodeId });
+    mutationFn: async (data: {
+      qrCodeId: string;
+      accessType: string | null;
+      vehiclePlates: string | null;
+      notes: string | null;
+    }) => {
+      const res = await apiRequest("POST", "/api/access-logs", data);
       return await res.json();
     },
     onSuccess: () => {
@@ -84,6 +101,7 @@ export default function GuardiaHome() {
         description: "El visitante ha sido registrado exitosamente",
       });
       setValidationResult(null);
+      setShowNotesDialog(false);
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
@@ -227,8 +245,20 @@ export default function GuardiaHome() {
   }, [scanner]);
 
   const handleGrantAccess = () => {
+    setAccessType("pie");
+    setVehiclePlates("");
+    setNotesText("");
+    setShowNotesDialog(true);
+  };
+
+  const handleSubmitAccessNotes = () => {
     if (validationResult?.qrCode) {
-      grantAccessMutation.mutate(validationResult.qrCode.id);
+      grantAccessMutation.mutate({
+        qrCodeId: validationResult.qrCode.id,
+        accessType: accessType || null,
+        vehiclePlates: vehiclePlates.trim() || null,
+        notes: notesText.trim() || null,
+      });
     }
   };
 
@@ -492,6 +522,97 @@ export default function GuardiaHome() {
           </Card>
         )}
       </main>
+
+      {/* Notas de Acceso Dialog */}
+      <Dialog open={showNotesDialog} onOpenChange={setShowNotesDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalles de Acceso</DialogTitle>
+            <DialogDescription>
+              Agrega información sobre cómo ingresa el visitante
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Tipo de Ingreso */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold" data-testid="label-access-type">
+                Tipo de Ingreso
+              </label>
+              <div className="flex gap-3">
+                <Button
+                  variant={accessType === "pie" ? "default" : "outline"}
+                  onClick={() => setAccessType("pie")}
+                  className="flex-1 h-10"
+                  data-testid="button-access-type-pie"
+                >
+                  A Pie
+                </Button>
+                <Button
+                  variant={accessType === "vehiculo" ? "default" : "outline"}
+                  onClick={() => setAccessType("vehiculo")}
+                  className="flex-1 h-10"
+                  data-testid="button-access-type-vehiculo"
+                >
+                  Vehículo
+                </Button>
+              </div>
+            </div>
+
+            {/* Placas del Vehículo - Solo visible si es vehículo */}
+            {accessType === "vehiculo" && (
+              <div className="space-y-2">
+                <label htmlFor="vehicle-plates" className="text-sm font-semibold" data-testid="label-vehicle-plates">
+                  Placas del Vehículo
+                </label>
+                <Input
+                  id="vehicle-plates"
+                  placeholder="e.g., ABC 1234"
+                  value={vehiclePlates}
+                  onChange={(e) => setVehiclePlates(e.target.value)}
+                  data-testid="input-vehicle-plates"
+                  className="h-10"
+                />
+              </div>
+            )}
+
+            {/* Notas */}
+            <div className="space-y-2">
+              <label htmlFor="notes" className="text-sm font-semibold" data-testid="label-notes">
+                Notas Adicionales (Opcional)
+              </label>
+              <Textarea
+                id="notes"
+                placeholder="Ej: Visitante con paquete, acompañado por residente..."
+                value={notesText}
+                onChange={(e) => setNotesText(e.target.value)}
+                data-testid="textarea-notes"
+                className="min-h-20 resize-none"
+              />
+            </div>
+          </div>
+
+          {/* Acciones */}
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowNotesDialog(false)}
+              className="flex-1 h-10"
+              data-testid="button-cancel-notes"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSubmitAccessNotes}
+              disabled={grantAccessMutation.isPending}
+              className="flex-1 h-10"
+              data-testid="button-submit-access"
+            >
+              {grantAccessMutation.isPending ? "Registrando..." : "Confirmar Acceso"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

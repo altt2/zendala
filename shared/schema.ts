@@ -55,6 +55,9 @@ export const accessLogs = pgTable("access_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   qrCodeId: varchar("qr_code_id").notNull().references(() => qrCodes.id),
   guardId: varchar("guard_id").notNull().references(() => users.id),
+  accessType: varchar("access_type", { length: 50 }),
+  vehiclePlates: varchar("vehicle_plates"),
+  notes: text("notes"),
   accessedAt: timestamp("accessed_at").defaultNow(),
 });
 

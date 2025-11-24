@@ -167,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/access-logs", isAuthenticated, isGuardOrAdmin, async (req: any, res) => {
     try {
       const guardId = req.user.claims.sub;
-      const { qrCodeId } = req.body;
+      const { qrCodeId, accessType, vehiclePlates, notes } = req.body;
 
       if (!qrCodeId) {
         return res.status(400).json({ message: "QR code ID is required" });
@@ -178,6 +178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const accessLog = await storage.createAccessLog({
         qrCodeId,
         guardId,
+        accessType: accessType || null,
+        vehiclePlates: vehiclePlates || null,
+        notes: notes || null,
       });
 
       res.json(accessLog);

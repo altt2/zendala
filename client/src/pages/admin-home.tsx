@@ -22,6 +22,9 @@ import logoUrl from "@assets/generated_images/zendala_residential_community_logo
 interface AccessLogWithDetails {
   id: string;
   accessedAt: string;
+  accessType?: string;
+  vehiclePlates?: string;
+  notes?: string;
   qrCode: {
     visitorName: string;
     visitorType: string;
@@ -322,6 +325,37 @@ export default function AdminHome() {
                             <p className="text-sm" data-testid={`text-log-description-${log.id}`}>
                               {log.qrCode.description}
                             </p>
+                          </div>
+                        )}
+                        {(log.accessType || log.vehiclePlates || log.notes) && (
+                          <div className="mt-3 pt-3 border-t">
+                            <p className="text-xs font-semibold text-muted-foreground mb-2">Detalles de Acceso</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              {log.accessType && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Tipo de Ingreso</p>
+                                  <p className="text-sm font-semibold capitalize" data-testid={`text-log-access-type-${log.id}`}>
+                                    {log.accessType === "pie" ? "A Pie" : "Vehículo"}
+                                  </p>
+                                </div>
+                              )}
+                              {log.vehiclePlates && (
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Placas</p>
+                                  <p className="text-sm font-mono font-semibold" data-testid={`text-log-plates-${log.id}`}>
+                                    {log.vehiclePlates}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                            {log.notes && (
+                              <div className="mt-2">
+                                <p className="text-xs text-muted-foreground">Notas</p>
+                                <p className="text-sm" data-testid={`text-log-notes-${log.id}`}>
+                                  {log.notes}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )}
                       </CardContent>
