@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LogOut, CheckCircle, XCircle, Camera } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { LogOut, CheckCircle, XCircle, Camera, Keyboard } from "lucide-react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import logoUrl from "@assets/generated_images/zendala_residential_community_logo.png";
 
@@ -33,6 +34,8 @@ export default function GuardiaHome() {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const [scanning, setScanning] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualCode, setManualCode] = useState("");
   const [validationResult, setValidationResult] = useState<QrValidationResult | null>(null);
   const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
 
@@ -102,7 +105,15 @@ export default function GuardiaHome() {
 
   const startScanning = () => {
     setScanning(true);
+    setManualMode(false);
     setValidationResult(null);
+  };
+
+  const startManualMode = () => {
+    setManualMode(true);
+    setScanning(false);
+    setValidationResult(null);
+    setManualCode("");
   };
 
   const stopScanning = () => {
@@ -111,6 +122,18 @@ export default function GuardiaHome() {
       setScanner(null);
     }
     setScanning(false);
+  };
+
+  const handleManualSubmit = () => {
+    if (!manualCode.trim()) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa un código QR",
+        variant: "destructive",
+      });
+      return;
+    }
+    validateQrMutation.mutate(manualCode.trim());
   };
 
   // Initialize scanner when scanning state becomes true
@@ -267,23 +290,34 @@ export default function GuardiaHome() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        {!scanning && !validationResult && (
+        {!scanning && !manualMode && !validationResult && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl font-semibold">Escanear Código QR</CardTitle>
+              <CardTitle className="text-xl font-semibold">Validar Acceso del Visitante</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-base text-muted-foreground">
-                Presiona el botón para activar la cámara y escanear el código QR del visitante
+                Elige cómo deseas validar el código QR del visitante
               </p>
-              <Button 
-                onClick={startScanning}
-                className="w-full py-3 text-lg h-12"
-                data-testid="button-start-scan"
-              >
-                <Camera className="h-5 w-5 mr-2" />
-                Activar Escáner
-              </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Button 
+                  onClick={startScanning}
+                  className="py-3 text-lg h-12"
+                  data-testid="button-start-scan"
+                >
+                  <Camera className="h-5 w-5 mr-2" />
+                  Escanear con Cámara
+                </Button>
+                <Button 
+                  onClick={startManualMode}
+                  variant="outline"
+                  className="py-3 text-lg h-12"
+                  data-testid="button-manual-mode"
+                >
+                  <Keyboard className="h-5 w-5 mr-2" />
+                  Ingresar Manualmente
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -307,6 +341,47 @@ export default function GuardiaHome() {
                 style={{ minHeight: "400px" }}
                 data-testid="qr-reader-container"
               />
+            </CardContent>
+          </Card>
+        )}
+
+        {manualMode && !validationResult && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-xl font-semibold">Ingresar Código QR</CardTitle>
+              <Button 
+                variant="outline" 
+                onClick={() => setManualMode(false)}
+                data-testid="button-cancel-manual"
+              >
+                Cancelar
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-base text-muted-foreground">
+                Copia y pega o ingresa el código QR del visitante
+              </p>
+              <Input 
+                placeholder="Pega aquí el código QR..."
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleManualSubmit();
+                  }
+                }}
+                data-testid="input-manual-code"
+                className="text-lg py-3 h-12"
+                autoFocus
+              />
+              <Button 
+                onClick={handleManualSubmit}
+                disabled={validateQrMutation.isPending || !manualCode.trim()}
+                className="w-full h-12"
+                data-testid="button-validate-manual"
+              >
+                {validateQrMutation.isPending ? "Validando..." : "Validar Código"}
+              </Button>
             </CardContent>
           </Card>
         )}
