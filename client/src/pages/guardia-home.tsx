@@ -133,7 +133,9 @@ export default function GuardiaHome() {
       });
       return;
     }
-    validateQrMutation.mutate(manualCode.trim());
+    const trimmedCode = manualCode.trim();
+    console.log("[Manual Code Submit] Code to validate:", trimmedCode, "Length:", trimmedCode.length);
+    validateQrMutation.mutate(trimmedCode);
   };
 
   // Initialize scanner when scanning state becomes true

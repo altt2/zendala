@@ -82,15 +82,30 @@ export default function VecinoHome() {
   };
 
   const handleCopyCode = () => {
-    if (selectedQr?.code) {
-      navigator.clipboard.writeText(selectedQr.code);
+    if (!selectedQr?.code) {
+      toast({
+        title: "Error",
+        description: "No hay código disponible para copiar",
+        variant: "destructive",
+      });
+      return;
+    }
+    console.log("[Copy Code] Copying code:", selectedQr.code);
+    navigator.clipboard.writeText(selectedQr.code).then(() => {
       setCopiedCode(true);
       toast({
         title: "Código copiado",
-        description: "El código QR ha sido copiado al portapapeles",
+        description: `${selectedQr.code}`,
       });
-      setTimeout(() => setCopiedCode(false), 2000);
-    }
+      setTimeout(() => setCopiedCode(false), 3000);
+    }).catch((err) => {
+      console.error("[Copy Code] Error copying:", err);
+      toast({
+        title: "Error",
+        description: "No se pudo copiar el código",
+        variant: "destructive",
+      });
+    });
   };
 
   const getStatusBadge = (qr: QrCode) => {
@@ -295,18 +310,24 @@ export default function VecinoHome() {
                 {selectedQr.isUsed !== "true" && (
                   <div>
                     <p className="text-sm text-muted-foreground mb-2">Código para el Guardia</p>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Copia este código y pásalo al guardia en la caseta
+                    </p>
                     <div className="flex items-center gap-2">
-                      <Input 
-                        readOnly
-                        value={selectedQr.code}
-                        data-testid="input-qr-code"
-                        className="text-xs font-mono"
-                      />
+                      <div className="flex-1 bg-muted p-3 rounded-md border border-muted-foreground/20">
+                        <code 
+                          className="text-xs font-mono break-all"
+                          data-testid="text-qr-code-value"
+                        >
+                          {selectedQr.code || "ERROR: Sin código"}
+                        </code>
+                      </div>
                       <Button 
                         size="icon" 
                         onClick={handleCopyCode}
                         data-testid="button-copy-code"
                         className="flex-shrink-0"
+                        title="Copiar código"
                       >
                         {copiedCode ? (
                           <Check className="h-4 w-4" />
