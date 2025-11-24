@@ -19,6 +19,20 @@ const isAdmin: RequestHandler = async (req: any, res, next) => {
   next();
 };
 
+const isVecinoOrAdmin: RequestHandler = async (req: any, res, next) => {
+  const userId = req.user?.claims?.sub;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  
+  const user = await storage.getUser(userId);
+  if (user?.role !== "vecino" && user?.role !== "administrador") {
+    return res.status(403).json({ message: "Forbidden: Resident or Admin access required" });
+  }
+  
+  next();
+};
+
 const isGuardOrAdmin: RequestHandler = async (req: any, res, next) => {
   const userId = req.user?.claims?.sub;
   if (!userId) {
@@ -64,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/qr-codes", isAuthenticated, async (req: any, res) => {
+  app.post("/api/qr-codes", isAuthenticated, isVecinoOrAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const validatedData = insertQrCodeSchema.parse(req.body);
@@ -84,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/qr-codes", isAuthenticated, async (req: any, res) => {
+  app.get("/api/qr-codes", isAuthenticated, isVecinoOrAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const qrCodes = await storage.getQrCodesByUser(userId);
