@@ -103,23 +103,6 @@ export default function GuardiaHome() {
   const startScanning = () => {
     setScanning(true);
     setValidationResult(null);
-
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-      "qr-reader",
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      false
-    );
-
-    html5QrcodeScanner.render(
-      (decodedText) => {
-        validateQrMutation.mutate(decodedText);
-      },
-      (error) => {
-        console.log("QR scan error:", error);
-      }
-    );
-
-    setScanner(html5QrcodeScanner);
   };
 
   const stopScanning = () => {
@@ -130,6 +113,46 @@ export default function GuardiaHome() {
     setScanning(false);
   };
 
+  // Initialize scanner when scanning state becomes true
+  useEffect(() => {
+    if (!scanning) return;
+
+    // Wait a tick to ensure DOM element exists
+    const timeout = setTimeout(() => {
+      try {
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+          "qr-reader",
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          false
+        );
+
+        html5QrcodeScanner.render(
+          (decodedText) => {
+            validateQrMutation.mutate(decodedText);
+          },
+          (error) => {
+            console.log("QR scan error:", error);
+          }
+        );
+
+        setScanner(html5QrcodeScanner);
+      } catch (error) {
+        console.error("Failed to initialize scanner:", error);
+        setScanning(false);
+        toast({
+          title: "Error",
+          description: "No se pudo inicializar la cámara",
+          variant: "destructive",
+        });
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [scanning, validateQrMutation, toast]);
+
+  // Cleanup scanner resources
   useEffect(() => {
     return () => {
       if (scanner) {
