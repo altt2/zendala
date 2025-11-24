@@ -173,6 +173,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "QR code ID is required" });
       }
 
+      // Debug: Log the user role authorizing the access
+      const authUser = await storage.getUser(guardId);
+      console.log(`[Access Log Create] User ${guardId} (${authUser?.firstName} ${authUser?.lastName}) with role ${authUser?.role} is authorizing access`);
+
       await storage.updateQrCodeUsed(qrCodeId);
 
       const accessLog = await storage.createAccessLog({
