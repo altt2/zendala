@@ -127,6 +127,8 @@ export default function VecinoHome() {
     }
 
     try {
+      const message = `Hola, aquí está la contraseña de acceso para ${selectedQr.visitorName}:\n\n${selectedQr.accessPassword}\n\nPresentala en la caseta de seguridad.`;
+
       // Generar imagen PNG del QR
       const qrImageUrl = await QRCode.toDataURL(selectedQr.code, {
         errorCorrectionLevel: 'H',
@@ -139,7 +141,29 @@ export default function VecinoHome() {
         }
       });
 
-      // Descargar la imagen
+      // Convertir data URL a blob
+      const response = await fetch(qrImageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], `codigo-qr-${selectedQr.visitorName}.png`, { type: 'image/png' });
+
+      // Intentar usar Web Share API (funciona mejor en móvil)
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: 'Código QR de Acceso',
+            text: message,
+            files: [file],
+          });
+          return;
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            return; // Usuario canceló
+          }
+          // Continuar con fallback
+        }
+      }
+
+      // Fallback: Descargar imagen y abrir WhatsApp
       const link = document.createElement('a');
       link.href = qrImageUrl;
       link.download = `codigo-qr-${selectedQr.visitorName}.png`;
@@ -147,24 +171,21 @@ export default function VecinoHome() {
       link.click();
       document.body.removeChild(link);
 
-      // Abrir WhatsApp con mensaje
-      const message = `Hola, aquí está la contraseña de acceso para ${selectedQr.visitorName}:\n\n${selectedQr.accessPassword}\n\nPresentala en la caseta de seguridad.`;
-      const encodedMessage = encodeURIComponent(message);
-      
-      setTimeout(() => {
-        window.open(`https://wa.me/?text=${encodedMessage}`, "_blank");
-      }, 500);
-
       toast({
-        title: "¡Listo!",
-        description: "La imagen QR se descargó. Comparte la imagen en WhatsApp.",
+        title: "Imagen descargada",
+        description: "La imagen del QR se descargó. Abre WhatsApp y comparte la imagen manualmente.",
       });
+
+      // Abrir WhatsApp
+      setTimeout(() => {
+        window.open(`https://wa.me`, "_blank");
+      }, 1000);
 
     } catch (error) {
       console.error("Error al compartir:", error);
       toast({
         title: "Error",
-        description: "No se pudo descargar la imagen.",
+        description: "No se pudo procesar la imagen.",
         variant: "destructive",
       });
     }
