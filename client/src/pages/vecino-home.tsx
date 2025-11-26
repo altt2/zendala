@@ -141,7 +141,33 @@ export default function VecinoHome() {
         }
       });
 
-      // Descargar imagen
+      // Convertir Data URL a Blob
+      const response = await fetch(qrImageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], `codigo-qr-${selectedQr.visitorName}.png`, { type: 'image/png' });
+
+      // Intentar compartir con Web Share API
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Código QR de Acceso',
+            text: message,
+            files: [file],
+          });
+          toast({
+            title: "¡Compartido!",
+            description: "La imagen y el mensaje se enviaron a WhatsApp.",
+          });
+          return;
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            return; // Usuario canceló
+          }
+          console.log('Share API error, usando fallback:', error);
+        }
+      }
+
+      // Fallback: descargar imagen y abrir WhatsApp
       const link = document.createElement('a');
       link.href = qrImageUrl;
       link.download = `codigo-qr-${selectedQr.visitorName}.png`;
@@ -149,30 +175,20 @@ export default function VecinoHome() {
       link.click();
       document.body.removeChild(link);
 
-      // Copiar mensaje al portapapeles
-      await navigator.clipboard.writeText(message);
-
       toast({
-        title: "¡Listo!",
-        description: "Imagen descargada y mensaje copiado. Abre WhatsApp para compartir.",
+        title: "Imagen descargada",
+        description: "Abre WhatsApp y adjunta la imagen desde Descargas.",
       });
 
-      // Abrir WhatsApp App
       setTimeout(() => {
-        // Intentar abrir la app de WhatsApp primero
-        window.location.href = 'whatsapp://send?text=' + encodeURIComponent(message);
-        
-        // Si no abre la app en 2 segundos, abrir wa.me
-        setTimeout(() => {
-          window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
-        }, 2000);
+        window.location.href = `whatsapp://send?text=${encodeURIComponent(message)}`;
       }, 500);
 
     } catch (error) {
       console.error("Error al compartir:", error);
       toast({
         title: "Error",
-        description: "No se pudo procesar. Intenta de nuevo.",
+        description: "No se pudo procesar.",
         variant: "destructive",
       });
     }
