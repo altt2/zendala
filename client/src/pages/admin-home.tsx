@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   LogOut, 
   QrCode as QrCodeIcon, 
@@ -15,7 +17,8 @@ import {
   ClipboardList,
   Users,
   CheckCircle,
-  Activity
+  Activity,
+  Key
 } from "lucide-react";
 import logoUrl from "@assets/images_1763955668403.png";
 
@@ -53,6 +56,9 @@ export default function AdminHome() {
   const { user, isLoading: authLoading } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState("");
 
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
@@ -63,6 +69,35 @@ export default function AdminHome() {
   const { data: accessLogs, isLoading: logsLoading } = useQuery<AccessLogWithDetails[]>({
     queryKey: ["/api/access-logs"],
     enabled: !!user,
+  });
+
+  const { data: allUsers, isLoading: usersLoading } = useQuery<any[]>({
+    queryKey: ["/api/users"],
+    enabled: !!user,
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("POST", `/api/users/${userId}/reset-password`, { newPassword });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Contraseña restablecida",
+        description: `La contraseña de ${selectedUser?.firstName} ${selectedUser?.lastName} ha sido restablecida`,
+      });
+      setShowResetPassword(false);
+      setSelectedUser(null);
+      setNewPassword("");
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo restablecer la contraseña",
+        variant: "destructive",
+      });
+    },
   });
 
   const filteredLogs = accessLogs?.filter((log) => {
@@ -113,7 +148,7 @@ export default function AdminHome() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md" data-testid="tabs-navigation">
+          <TabsList className="grid w-full grid-cols-3 max-w-md" data-testid="tabs-navigation">
             <TabsTrigger value="dashboard" data-testid="tab-dashboard">
               <Activity className="h-4 w-4 mr-2" />
               Dashboard
@@ -121,6 +156,10 @@ export default function AdminHome() {
             <TabsTrigger value="history" data-testid="tab-history">
               <ClipboardList className="h-4 w-4 mr-2" />
               Historial
+            </TabsTrigger>
+            <TabsTrigger value="users" data-testid="tab-users">
+              <Users className="h-4 w-4 mr-2" />
+              Usuarios
             </TabsTrigger>
           </TabsList>
 

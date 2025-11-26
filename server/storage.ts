@@ -19,6 +19,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserRole(userId: string, role: string): Promise<User>;
   createLocalUser(data: { username: string; firstName: string; lastName: string; password: string; role: string }): Promise<User>;
+  resetUserPassword(userId: string, newPassword: string): Promise<User>;
   getAllUsers(): Promise<User[]>;
   createQrCode(qrCode: InsertQrCode): Promise<QrCode>;
   getQrCodesByUser(userId: string): Promise<QrCode[]>;
@@ -79,6 +80,18 @@ export class DatabaseStorage implements IStorage {
         passwordHash,
         role: data.role,
       })
+      .returning();
+    return user;
+  }
+
+  async resetUserPassword(userId: string, newPassword: string): Promise<User> {
+    const crypto = await import("crypto");
+    const passwordHash = crypto.createHash("sha256").update(newPassword).digest("hex");
+
+    const [user] = await db
+      .update(users)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(users.id, userId))
       .returning();
     return user;
   }

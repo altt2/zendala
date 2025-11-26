@@ -286,6 +286,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/users/:userId/reset-password", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { newPassword } = req.body;
+
+      if (!newPassword) {
+        return res.status(400).json({ message: "New password is required" });
+      }
+
+      const user = await storage.resetUserPassword(userId, newPassword);
+      
+      res.json({
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        message: "Password reset successfully",
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
