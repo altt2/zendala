@@ -117,32 +117,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/qr-codes/validate", isAuthenticated, isGuardOrAdmin, async (req: any, res) => {
     try {
-      let { code } = req.body;
+      let { code, password } = req.body;
+      let qrCode;
       
-      if (!code) {
-        return res.status(400).json({ message: "Code is required" });
+      // Try to validate by password first (preferred), then by code (fallback)
+      if (password) {
+        password = String(password).trim().toUpperCase();
+        console.log(`[QR Validation] Searching by password: "${password}"`);
+        qrCode = await storage.getQrCodeByPassword(password);
+      } else if (code) {
+        code = String(code).trim();
+        console.log(`[QR Validation] Searching by code: "${code}"`);
+        qrCode = await storage.getQrCodeByCode(code);
+      } else {
+        return res.status(400).json({ message: "Password or code is required" });
       }
 
-      // Clean up the code: trim whitespace and normalize
-      code = String(code).trim();
-      console.log(`[QR Validation] Searching for code: "${code}"`);
-
-      const qrCode = await storage.getQrCodeByCode(code);
-
       if (!qrCode) {
-        console.log(`[QR Validation] Code not found: "${code}"`);
+        console.log(`[QR Validation] QR not found`);
         return res.json({
           valid: false,
-          message: "Código QR no encontrado",
+          message: "Contraseña o código no encontrado",
         });
       }
 
-      console.log(`[QR Validation] Code found: ${qrCode.id}, isUsed: ${qrCode.isUsed}`);
+      console.log(`[QR Validation] QR found: ${qrCode.id}, isUsed: ${qrCode.isUsed}`);
 
       if (qrCode.isUsed === "true") {
         return res.json({
           valid: false,
-          message: "Este código QR ya ha sido utilizado",
+          message: "Este acceso ya ha sido utilizado",
         });
       }
 

@@ -23,6 +23,7 @@ export interface IStorage {
   createQrCode(qrCode: InsertQrCode): Promise<QrCode>;
   getQrCodesByUser(userId: string): Promise<QrCode[]>;
   getQrCodeByCode(code: string): Promise<QrCode | undefined>;
+  getQrCodeByPassword(password: string): Promise<QrCode | undefined>;
   updateQrCodeUsed(id: string): Promise<void>;
   createAccessLog(log: InsertAccessLog): Promise<AccessLog>;
   getAllAccessLogs(): Promise<any[]>;
@@ -89,11 +90,33 @@ export class DatabaseStorage implements IStorage {
       .orderBy(users.createdAt);
   }
 
+  private generateAccessPassword(): string {
+    // Generate memorable password: XXXX-1234 (4 letters + 4 numbers)
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numbers = "0123456789";
+    let password = "";
+    
+    // Add 4 random letters
+    for (let i = 0; i < 4; i++) {
+      password += letters.charAt(Math.floor(Math.random() * letters.length));
+    }
+    
+    password += "-";
+    
+    // Add 4 random numbers
+    for (let i = 0; i < 4; i++) {
+      password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    }
+    
+    return password;
+  }
+
   async createQrCode(qrCodeData: InsertQrCode): Promise<QrCode> {
     const code = randomUUID();
+    const accessPassword = this.generateAccessPassword();
     const [qrCode] = await db
       .insert(qrCodes)
-      .values({ ...qrCodeData, code })
+      .values({ ...qrCodeData, code, accessPassword })
       .returning();
     return qrCode;
   }
@@ -111,6 +134,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(qrCodes)
       .where(eq(qrCodes.code, code));
+    return qrCode;
+  }
+
+  async getQrCodeByPassword(password: string): Promise<QrCode | undefined> {
+    const [qrCode] = await db
+      .select()
+      .from(qrCodes)
+      .where(eq(qrCodes.accessPassword, password));
     return qrCode;
   }
 

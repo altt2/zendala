@@ -55,8 +55,8 @@ export default function GuardiaHome() {
 
 
   const validateQrMutation = useMutation({
-    mutationFn: async (code: string) => {
-      const res = await apiRequest("POST", "/api/qr-codes/validate", { code });
+    mutationFn: async (password: string) => {
+      const res = await apiRequest("POST", "/api/qr-codes/validate", { password });
       return await res.json();
     },
     onSuccess: (data: QrValidationResult) => {
@@ -150,13 +150,13 @@ export default function GuardiaHome() {
     if (!manualCode.trim()) {
       toast({
         title: "Error",
-        description: "Por favor ingresa un código QR",
+        description: "Por favor ingresa la contraseña",
         variant: "destructive",
       });
       return;
     }
     const trimmedCode = manualCode.trim();
-    console.log("[Manual Code Submit] Code to validate:", trimmedCode, "Length:", trimmedCode.length);
+    console.log("[Password Submit] Password to validate:", trimmedCode);
     validateQrMutation.mutate(trimmedCode);
   };
 
@@ -354,7 +354,7 @@ export default function GuardiaHome() {
                   data-testid="button-start-scan"
                 >
                   <Camera className="h-5 w-5 mr-2" />
-                  Escanear con Cámara
+                  Escanear QR
                 </Button>
                 <Button 
                   onClick={startManualMode}
@@ -363,7 +363,7 @@ export default function GuardiaHome() {
                   data-testid="button-manual-mode"
                 >
                   <Keyboard className="h-5 w-5 mr-2" />
-                  Ingresar Manualmente
+                  Ingresar Contraseña
                 </Button>
               </div>
             </CardContent>
@@ -396,7 +396,7 @@ export default function GuardiaHome() {
         {manualMode && !validationResult && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-xl font-semibold">Ingresar Código QR</CardTitle>
+              <CardTitle className="text-xl font-semibold">Ingresar Contraseña de Acceso</CardTitle>
               <Button 
                 variant="outline" 
                 onClick={() => setManualMode(false)}
@@ -407,12 +407,12 @@ export default function GuardiaHome() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-base text-muted-foreground">
-                Copia y pega o ingresa el código QR del visitante
+                Ingresa la contraseña de acceso del visitante (formato: XXXX-1234)
               </p>
               <Input 
-                placeholder="Pega aquí el código QR..."
+                placeholder="Ej: ABCD-1234"
                 value={manualCode}
-                onChange={(e) => setManualCode(e.target.value)}
+                onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                 onKeyPress={(e) => {
                   if (e.key === "Enter") {
                     handleManualSubmit();
@@ -428,7 +428,7 @@ export default function GuardiaHome() {
                 className="w-full h-12"
                 data-testid="button-validate-manual"
               >
-                {validateQrMutation.isPending ? "Validando..." : "Validar Código"}
+                {validateQrMutation.isPending ? "Validando..." : "Validar Contraseña"}
               </Button>
             </CardContent>
           </Card>
