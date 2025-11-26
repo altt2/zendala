@@ -419,6 +419,13 @@ export default function VecinoHome() {
               <p className="text-xs sm:text-sm text-muted-foreground text-center">
                 Captura pantalla, escanea el código o comunica la contraseña
               </p>
+              <Button 
+                onClick={() => setShowFullQR(false)}
+                className="w-full mt-4"
+                data-testid="button-close-full-qr"
+              >
+                Cerrar
+              </Button>
             </div>
           )}
         </DialogContent>
