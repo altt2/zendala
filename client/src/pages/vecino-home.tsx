@@ -28,7 +28,7 @@ export default function VecinoHome() {
   const [description, setDescription] = useState("");
   const [selectedQr, setSelectedQr] = useState<QrCode | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
-  const qrRef = useRef<HTMLDivElement>(null);
+  const qrDisplayRef = useRef<HTMLDivElement>(null);
 
 
   const { data: qrCodes, isLoading: codesLoading } = useQuery<QrCode[]>({
@@ -115,7 +115,7 @@ export default function VecinoHome() {
     });
   };
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = async () => {
     if (!selectedQr?.accessPassword) {
       toast({
         title: "Error",
@@ -125,67 +125,87 @@ export default function VecinoHome() {
       return;
     }
 
-    const qrElement = qrRef.current?.querySelector('svg') as SVGElement;
-    if (!qrElement) {
-      // Si no hay elemento de referencia, solo compartir texto
+    try {
+      // Buscar el SVG visible en el modal
+      const qrContainer = qrDisplayRef.current;
+      const svgElement = qrContainer?.querySelector('svg') as SVGElement;
+      
+      if (!svgElement) {
+        throw new Error("QR no encontrado");
+      }
+
+      // Obtener dimensiones del SVG
+      const svgRect = svgElement.getBoundingClientRect();
+      const size = Math.max(svgRect.width, svgRect.height, 120);
+
+      // Crear canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) throw new Error("Canvas context no disponible");
+
+      // Fondo blanco
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, size, size);
+
+      // Serializar SVG
+      const svgString = new XMLSerializer().serializeToString(svgElement);
+      const img = new Image();
+      const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => {
+          try {
+            ctx.drawImage(img, 0, 0);
+            URL.revokeObjectURL(url);
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("Error cargando imagen"));
+        };
+        img.src = url;
+      });
+
+      // Convertir canvas a PNG
+      const pngUrl = canvas.toDataURL('image/png');
+      
+      // Descargar
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = `codigo-qr-${selectedQr.visitorName}.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+
+      // Abrir WhatsApp con mensaje
       const message = `Hola, aquí está la contraseña de acceso para ${selectedQr.visitorName}:\n\n${selectedQr.accessPassword}\n\nPresentala en la caseta de seguridad.`;
       const encodedMessage = encodeURIComponent(message);
-      window.open(`https://wa.me/?text=${encodedMessage}`, "_blank");
-      return;
-    }
+      
+      setTimeout(() => {
+        window.open(`https://wa.me/?text=${encodedMessage}`, "_blank");
+      }, 500);
 
-    try {
-      const svgString = new XMLSerializer().serializeToString(qrElement);
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+      toast({
+        title: "¡Listo!",
+        description: "La imagen QR se descargó. Comparte la imagen en WhatsApp.",
+      });
 
-      if (!ctx) throw new Error("Canvas context not available");
-
-      const img = new Image();
-      const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(svgBlob);
-
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        URL.revokeObjectURL(url);
-
-        canvas.toBlob((qrBlob) => {
-          if (!qrBlob) return;
-
-          const message = `Hola, aquí está la contraseña de acceso para ${selectedQr.visitorName}:\n\n${selectedQr.accessPassword}\n\nPresentala en la caseta de seguridad.`;
-          const imageDataUrl = canvas.toDataURL('image/png');
-
-          // Descargar imagen
-          const link = document.createElement('a');
-          link.href = imageDataUrl;
-          link.download = `codigo-qr-${selectedQr.visitorName}.png`;
-          link.click();
-
-          // Abrir WhatsApp
-          const encodedMessage = encodeURIComponent(message);
-          setTimeout(() => {
-            window.open(`https://wa.me/?text=${encodedMessage}`, "_blank");
-          }, 300);
-
-          toast({
-            title: "Imagen descargada",
-            description: "La imagen QR se descargó. Ahora comparte la imagen en WhatsApp.",
-          });
-        });
-      };
-
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        throw new Error("Failed to load SVG image");
-      };
-
-      img.src = url;
     } catch (error) {
       console.error("Error al compartir:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo descargar la imagen. Abre WhatsApp manualmente.",
+        variant: "destructive",
+      });
+      
+      // Fallback a solo texto
       const message = `Hola, aquí está la contraseña de acceso para ${selectedQr.visitorName}:\n\n${selectedQr.accessPassword}\n\nPresentala en la caseta de seguridad.`;
       const encodedMessage = encodeURIComponent(message);
       window.open(`https://wa.me/?text=${encodedMessage}`, "_blank");
@@ -412,9 +432,6 @@ export default function VecinoHome() {
                           {selectedQr.accessPassword}
                         </p>
                       </div>
-                      <div className="hidden" ref={qrRef}>
-                        <QRCodeSVG value={selectedQr.code} size={256} />
-                      </div>
                       <div className="flex gap-2 mt-2">
                         <Button
                           onClick={() => {
@@ -449,7 +466,7 @@ export default function VecinoHome() {
                       <p className="text-xs text-muted-foreground">
                         Dile al guardia: <strong>{selectedQr.accessPassword}</strong>
                       </p>
-                      <div className="flex justify-center bg-white p-3 rounded-lg">
+                      <div className="flex justify-center bg-white p-3 rounded-lg" ref={qrDisplayRef}>
                         <QRCodeSVG value={selectedQr.code} size={120} data-testid="qr-code-display" />
                       </div>
                     </div>
