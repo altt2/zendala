@@ -398,25 +398,26 @@ export default function VecinoHome() {
       </Dialog>
 
       <Dialog open={showFullQR} onOpenChange={setShowFullQR}>
-        <DialogContent className="max-w-2xl w-full flex flex-col items-center justify-center p-8" data-testid="dialog-full-qr">
-          <DialogHeader className="w-full text-center mb-4">
+        <DialogContent className="max-w-2xl w-full max-h-[95vh] overflow-y-auto flex flex-col items-center p-4 sm:p-8" data-testid="dialog-full-qr">
+          <DialogHeader className="w-full text-center mb-4 sticky top-0 bg-background z-10">
             <DialogTitle className="text-2xl font-bold">
               Código QR Ampliado
             </DialogTitle>
+            <p className="text-xs text-muted-foreground mt-2">Toca fuera para cerrar</p>
           </DialogHeader>
           {selectedQr && (
-            <div className="flex flex-col items-center gap-6 w-full">
-              <div className="bg-white p-8 rounded-lg">
-                <QRCodeSVG value={selectedQr.code} size={400} data-testid="qr-full-display" />
+            <div className="flex flex-col items-center gap-4 sm:gap-6 w-full pb-4">
+              <div className="bg-white p-4 sm:p-8 rounded-lg">
+                <QRCodeSVG value={selectedQr.code} size={320} data-testid="qr-full-display" />
               </div>
-              <div className="text-center space-y-2">
-                <p className="text-sm text-muted-foreground">Contraseña de Acceso</p>
-                <p className="text-4xl font-bold font-mono text-primary">
+              <div className="text-center space-y-2 w-full">
+                <p className="text-xs sm:text-sm text-muted-foreground">Contraseña de Acceso</p>
+                <p className="text-3xl sm:text-4xl font-bold font-mono text-primary">
                   {selectedQr.accessPassword}
                 </p>
               </div>
-              <p className="text-sm text-muted-foreground text-center max-w-sm">
-                Puedes capturar esta pantalla, escanear el código QR o comunicar la contraseña al guardia.
+              <p className="text-xs sm:text-sm text-muted-foreground text-center">
+                Captura pantalla, escanea el código o comunica la contraseña
               </p>
             </div>
           )}
