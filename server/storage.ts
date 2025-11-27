@@ -186,20 +186,18 @@ export class DatabaseStorage implements IStorage {
     const logs = await db
       .select({
         id: accessLogs.id,
+        qrCodeId: accessLogs.qrCodeId,
         accessedAt: accessLogs.accessedAt,
         accessType: accessLogs.accessType,
         vehiclePlates: accessLogs.vehiclePlates,
         notes: accessLogs.notes,
-        qrCode: {
-          visitorName: qrCodes.visitorName,
-          visitorType: qrCodes.visitorType,
-          description: qrCodes.description,
-        },
-        guard: {
-          firstName: users.firstName,
-          lastName: users.lastName,
-          role: users.role,
-        },
+        visitorName: qrCodes.visitorName,
+        visitorType: qrCodes.visitorType,
+        description: qrCodes.description,
+        createdById: qrCodes.createdById,
+        guardFirstName: users.firstName,
+        guardLastName: users.lastName,
+        guardRole: users.role,
       })
       .from(accessLogs)
       .innerJoin(qrCodes, eq(accessLogs.qrCodeId, qrCodes.id))
@@ -209,25 +207,33 @@ export class DatabaseStorage implements IStorage {
 
     const logsWithCreatedBy = await Promise.all(
       logs.map(async (log) => {
-        const [qrCode] = await db
-          .select()
-          .from(qrCodes)
-          .innerJoin(accessLogs, eq(qrCodes.id, accessLogs.qrCodeId))
-          .where(eq(accessLogs.id, log.id));
-
         const [creator] = await db
-          .select()
+          .select({
+            firstName: users.firstName,
+            lastName: users.lastName,
+          })
           .from(users)
-          .where(eq(users.id, qrCode.qr_codes.createdById));
+          .where(eq(users.id, log.createdById));
 
         return {
-          ...log,
+          id: log.id,
+          accessedAt: log.accessedAt,
+          accessType: log.accessType,
+          vehiclePlates: log.vehiclePlates,
+          notes: log.notes,
           qrCode: {
-            ...log.qrCode,
+            visitorName: log.visitorName,
+            visitorType: log.visitorType,
+            description: log.description,
             createdBy: {
-              firstName: creator.firstName,
-              lastName: creator.lastName,
+              firstName: creator?.firstName || "Unknown",
+              lastName: creator?.lastName || "",
             },
+          },
+          guard: {
+            firstName: log.guardFirstName,
+            lastName: log.guardLastName,
+            role: log.guardRole,
           },
         };
       })
