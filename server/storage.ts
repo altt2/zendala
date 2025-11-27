@@ -131,7 +131,16 @@ export class DatabaseStorage implements IStorage {
     const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 hours from now
     const [qrCode] = await db
       .insert(qrCodes)
-      .values({ ...qrCodeData, code, accessPassword, expiresAt })
+      .values({
+        visitorName: qrCodeData.visitorName,
+        visitorType: qrCodeData.visitorType,
+        description: qrCodeData.description,
+        expiresAt: qrCodeData.expiresAt,
+        code,
+        accessPassword,
+        createdById: (qrCodeData as any).createdById,
+        isUsed: "unused",
+      })
       .returning();
     return qrCode;
   }
