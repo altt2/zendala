@@ -141,18 +141,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log(`[QR Validation] QR found: ${qrCode.id}, isUsed: ${qrCode.isUsed}`);
+      console.log(`[QR Validation] QR found: ${qrCode.id}, isUsed: ${qrCode.isUsed}, expiresAt: ${qrCode.expiresAt}`);
 
       // Check if code is expired
-      if (qrCode.expiresAt && new Date() > new Date(qrCode.expiresAt)) {
-        console.log(`[QR Validation] QR expired: ${qrCode.id}`);
-        if (qrCode.isUsed === "unused") {
-          await storage.markQrCodeAsExpired(qrCode.id);
+      if (qrCode.expiresAt) {
+        const expiresAtTime = new Date(qrCode.expiresAt).getTime();
+        const nowTime = new Date().getTime();
+        console.log(`[QR Validation] Expiration check - expires: ${expiresAtTime}, now: ${nowTime}, diff: ${expiresAtTime - nowTime}ms`);
+        
+        if (nowTime > expiresAtTime) {
+          console.log(`[QR Validation] QR expired: ${qrCode.id}`);
+          if (qrCode.isUsed === "unused") {
+            await storage.markQrCodeAsExpired(qrCode.id);
+          }
+          return res.json({
+            valid: false,
+            message: "Este código ha expirado (pasaron más de 12 horas)",
+          });
         }
-        return res.json({
-          valid: false,
-          message: "Este código ha expirado (pasaron más de 12 horas)",
-        });
       }
 
       if (qrCode.isUsed !== "unused") {
