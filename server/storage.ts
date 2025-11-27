@@ -180,6 +180,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllAccessLogs(): Promise<any[]> {
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+
     const logs = await db
       .select({
         id: accessLogs.id,
@@ -201,6 +204,7 @@ export class DatabaseStorage implements IStorage {
       .from(accessLogs)
       .innerJoin(qrCodes, eq(accessLogs.qrCodeId, qrCodes.id))
       .innerJoin(users, eq(accessLogs.guardId, users.id))
+      .where(gte(accessLogs.accessedAt, fifteenDaysAgo))
       .orderBy(desc(accessLogs.accessedAt));
 
     const logsWithCreatedBy = await Promise.all(
