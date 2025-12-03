@@ -22,6 +22,23 @@ export function log(message: string, source = "express") {
 
 export const app = express();
 
+// CORS middleware to allow credentials from mobile clients
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  // Allow all origins for development, but always include credentials support
+  res.header("Access-Control-Allow-Origin", origin || "*");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  
+  // Handle preflight requests
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
