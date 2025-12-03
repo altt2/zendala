@@ -53,15 +53,17 @@ export default function Login() {
       console.log('Login response status:', response.status);
       console.log('Login response headers:', response.headers.get('content-type'));
 
-      // Parse response
+      // Parse response - handle both JSON and HTML errors
       let data;
+      const contentType = response.headers.get('content-type') || '';
+      const responseText = await response.text();
+      
       try {
-        data = await response.json();
+        data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('Failed to parse response as JSON:', parseError);
-        const text = await response.text();
-        console.error('Response text:', text.substring(0, 200));
-        throw new Error(`Server error (${response.status}): Invalid JSON response`);
+        console.error('Response text:', responseText.substring(0, 200));
+        throw new Error(`Server error (${response.status}): ${responseText.substring(0, 100)}`);
       }
 
       if (!response.ok) {
