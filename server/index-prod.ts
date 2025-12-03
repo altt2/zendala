@@ -16,7 +16,12 @@ export async function serveStatic(app: Express, _server: Server) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
+  // API routes should return 404 as JSON, not serve index.html
+  app.use("/api", (_req, res) => {
+    res.status(404).json({ message: "Not found" });
+  });
+
+  // fall through to index.html if the file doesn't exist (for SPA routing)
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
