@@ -5,7 +5,7 @@ import { createHash } from "crypto";
 
 import passport from "passport";
 import session from "express-session";
-import type { Express, RequestHandler } from "express";
+import type { Express, RequestHandler, Request, Response, NextFunction } from "express";
 import memoize from "memoizee";
 import { storage } from "./storage";
 
@@ -96,7 +96,7 @@ export async function setupAuth(app: Express) {
         usernameField: "username",
         passwordField: "password",
       },
-      async (username, password, done) => {
+      async (username: string, password: string, done: (err: any, user?: any, info?: any) => void) => {
         try {
           console.log('🔐 Local auth attempt:', username);
           const user = await storage.getUserByUsername(username);
@@ -156,15 +156,15 @@ export async function setupAuth(app: Express) {
     }
   };
 
-  passport.serializeUser((user: any, cb) => {
+  passport.serializeUser((user: any, cb: (err: any, id?: any) => void) => {
     cb(null, user);
   });
-  passport.deserializeUser((user: any, cb) => {
+  passport.deserializeUser((user: any, cb: (err: any, user?: any) => void) => {
     cb(null, user);
   });
 
   // Local login endpoint
-  app.post("/api/login-local", (req, res, next) => {
+  app.post("/api/login-local", (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.error('🔥 Login error:', err);
@@ -174,7 +174,7 @@ export async function setupAuth(app: Express) {
         return res.status(401).json({ message: info?.message || "Authentication failed" });
       }
 
-      req.logIn(user, (err) => {
+      req.logIn(user, (err: any) => {
         if (err) {
           console.error('🔥 Login session error:', err);
           return res.status(500).json({ message: "Error logging in", error: process.env.NODE_ENV === 'development' ? err.message : undefined });
@@ -188,7 +188,7 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/login", (req, res, next) => {
+  app.get("/api/login", (req: Request, res: Response, next: NextFunction) => {
     if (!config) {
       return res.status(503).json({ message: "Replit OAuth not configured. Use local login instead." });
     }
@@ -199,7 +199,7 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/callback", (req, res, next) => {
+  app.get("/api/callback", (req: Request, res: Response, next: NextFunction) => {
     if (!config) {
       return res.status(503).json({ message: "Replit OAuth not configured." });
     }
@@ -210,7 +210,7 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/logout", (req, res) => {
+  app.get("/api/logout", (req: Request, res: Response) => {
     req.logout(() => {
       if (!config || !process.env.REPL_ID) {
         return res.redirect("/");

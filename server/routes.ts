@@ -85,11 +85,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Support both OIDC (claims.sub) and local auth (id)
       const userId = req.user.claims?.sub || req.user.id;
       const validatedData = insertQrCodeSchema.parse(req.body);
-      
-      const qrCode = await storage.createQrCode({
+      // build final object separately so TypeScript doesn't complain about
+      // server-set fields that are omitted from the client-facing schema
+      const dataToInsert = {
         ...validatedData,
+        // createdById is set by the server and not part of the request schema
         createdById: userId,
-      });
+      } as any;
+
+      const qrCode = await storage.createQrCode(dataToInsert);
 
       console.log(`[QR Code Create] Generated code: ${qrCode.code}, ID: ${qrCode.id}`);
       console.log(`[QR Code Create] Full response:`, JSON.stringify(qrCode));
