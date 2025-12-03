@@ -14,14 +14,23 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve static files for SPA, but NOT for /api routes
+  // This ensures API routes are handled by Express handlers, not by static file serving
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      // Skip static file serving for API routes - let them be handled by route handlers
+      return next();
+    }
+    // For non-API routes, try to serve static files
+    express.static(distPath)(req, res, next);
+  });
 
-  // API routes should return 404 as JSON, not serve index.html
+  // API routes that weren't matched return 404 as JSON
   app.use("/api", (_req, res) => {
     res.status(404).json({ message: "Not found" });
   });
 
-  // fall through to index.html if the file doesn't exist (for SPA routing)
+  // SPA fallback: serve index.html for any non-API route that doesn't match a static file
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
