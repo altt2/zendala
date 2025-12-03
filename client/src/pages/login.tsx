@@ -50,13 +50,24 @@ export default function Login() {
         }),
       });
 
+      console.log('Login response status:', response.status);
+      console.log('Login response headers:', response.headers.get('content-type'));
+
+      // Parse response
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse response as JSON:', parseError);
+        const text = await response.text();
+        console.error('Response text:', text.substring(0, 200));
+        throw new Error(`Server error (${response.status}): Invalid JSON response`);
+      }
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || "Authentication failed");
       }
 
-      const data = await response.json();
-      
       // Save JWT token from response
       if (data.token) {
         setAuthToken(data.token);

@@ -178,6 +178,10 @@ export async function setupAuth(app: Express) {
   // Local login endpoint - returns JWT token
   app.post("/api/login-local", (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log('📱 POST /api/login-local received, origin:', req.get('origin'));
+      const { username, password } = req.body;
+      console.log('📱 Login attempt for username:', username);
+      
       passport.authenticate("local", (err: any, user: any, info: any) => {
         try {
           if (err) {
@@ -185,11 +189,13 @@ export async function setupAuth(app: Express) {
             return res.status(500).json({ message: "Error during authentication", error: process.env.NODE_ENV === 'development' ? err.message : undefined });
           }
           if (!user) {
+            console.warn('⚠️ Authentication failed for', username, 'reason:', info?.message);
             return res.status(401).json({ message: info?.message || "Authentication failed" });
           }
 
           // Generate JWT token instead of using sessions
           const token = generateJWT(user.id, user.username, user.role);
+          console.log('✅ User authenticated:', username, 'role:', user.role);
           
           return res.json({
             id: user.id,
