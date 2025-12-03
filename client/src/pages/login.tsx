@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { getApiUrl } from "@/lib/config";
 import logoUrl from "@assets/images_1763955668403.png";
 
 export default function Login() {
@@ -38,7 +39,7 @@ export default function Login() {
 
     try {
       // Try local login first
-      const response = await fetch("/api/login-local", {
+      const response = await fetch(getApiUrl("/api/login-local"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

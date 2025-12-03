@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getApiUrl } from "./config";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -6,7 +7,7 @@ async function throwIfResNotOk(res: Response) {
     
     if (res.status === 401) {
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = getApiUrl("/login");
       }, 100);
     }
     
@@ -19,7 +20,10 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  // Convert relative URLs to absolute if needed
+  const fullUrl = url.startsWith('http') ? url : getApiUrl(url);
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -36,7 +40,11 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    // Convert queryKey (array of path segments) to full URL
+    const path = (queryKey as Array<string | number>).join("/");
+    const url = getApiUrl(path as string);
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 
