@@ -14,6 +14,9 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
+  // Create the static middleware once
+  const staticMiddleware = express.static(distPath);
+
   // Serve static files for SPA, but NOT for /api routes
   // This ensures API routes are handled by Express handlers, not by static file serving
   app.use((req, res, next) => {
@@ -22,7 +25,7 @@ export async function serveStatic(app: Express, _server: Server) {
       return next();
     }
     // For non-API routes, try to serve static files
-    express.static(distPath)(req, res, next);
+    staticMiddleware(req, res, next);
   });
 
   // API routes that weren't matched return 404 as JSON
@@ -37,5 +40,8 @@ export async function serveStatic(app: Express, _server: Server) {
 }
 
 (async () => {
+  console.log('🚀 Starting production server...');
+  console.log('📁 Public directory:', path.resolve(import.meta.dirname, "public"));
+  console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
   await runApp(serveStatic);
 })();
