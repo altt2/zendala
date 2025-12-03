@@ -1,0 +1,53 @@
+name: Insert DB User
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: 'Username to create'
+        required: true
+      firstName:
+        description: 'First name'
+        required: true
+      lastName:
+        description: 'Last name'
+        required: true
+      role:
+        description: 'Role (vecino|guardia|administrador)'
+        required: false
+
+jobs:
+  insert_user:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install psql
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
+
+      - name: Compute password hash
+        env:
+          NEW_USER_PASSWORD: ${{ secrets.NEW_USER_PASSWORD }}
+        run: |
+          if [ -z "$NEW_USER_PASSWORD" ]; then
+            echo "ERROR: secret NEW_USER_PASSWORD is not set"
+            exit 1
+          fi
+          HASH=$(node -e "const crypto=require('crypto'); console.log(crypto.createHash('sha256').update(process.env.NEW_USER_PASSWORD).digest('hex'))")
+          echo "PASSWORD_HASH=$HASH" >> $GITHUB_ENV
+
+      - name: Insert user into DB
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          USERNAME: ${{ github.event.inputs.username }}
+          FIRSTNAME: ${{ github.event.inputs.firstName }}
+          LASTNAME: ${{ github.event.inputs.lastName }}
+          ROLE: ${{ github.event.inputs.role }}
+        run: |
+          ROLE=${ROLE:-vecino}
+          echo "Inserting user $USERNAME with role $ROLE"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<SQL
+          INSERT INTO users (username, first_name, last_name, password_hash, role)
+          VALUES ('$USERNAME', '$FIRSTNAME', '$LASTNAME', '$PASSWORD_HASH', '$ROLE')
+          ON CONFLICT (username) DO NOTHING;
+          SQL
