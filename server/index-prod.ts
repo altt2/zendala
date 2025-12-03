@@ -14,27 +14,33 @@ export async function serveStatic(app: Express, _server: Server) {
     );
   }
 
+  console.log('📁 Configuring static file serving from:', distPath);
+
   // Create the static middleware once
   const staticMiddleware = express.static(distPath);
 
-  // Serve static files for SPA, but NOT for /api routes
-  // This ensures API routes are handled by Express handlers, not by static file serving
+  // Serve static assets (JS, CSS, images, etc.)
+  app.use("/assets", staticMiddleware);
+
+  // Serve favicon, manifest, etc. from public root
   app.use((req, res, next) => {
-    if (req.path.startsWith('/api')) {
-      // Skip static file serving for API routes - let them be handled by route handlers
-      return next();
+    if (req.path === "/" || req.path === "/index.html" || 
+        req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot)$/i) ||
+        req.path.match(/^\/public\//)) {
+      return staticMiddleware(req, res, next);
     }
-    // For non-API routes, try to serve static files
-    staticMiddleware(req, res, next);
+    next();
   });
 
   // API routes that weren't matched return 404 as JSON
   app.use("/api", (_req, res) => {
+    console.log('❌ API route not found:', _req.path);
     res.status(404).json({ message: "Not found" });
   });
 
   // SPA fallback: serve index.html for any non-API route that doesn't match a static file
   app.use("*", (_req, res) => {
+    console.log('📄 Serving SPA fallback (index.html) for route:', _req.path);
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
