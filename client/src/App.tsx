@@ -9,6 +9,7 @@ import CrearUsuario from "@/pages/crear-usuario";
 import VecinoHome from "@/pages/vecino-home";
 import GuardiaHome from "@/pages/guardia-home";
 import AdminHome from "@/pages/admin-home";
+import TestConnection from "@/pages/test-connection";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -30,6 +31,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Login} />
         <Route path="/crear-usuario" component={CrearUsuario} />
+        <Route path="/test-connection" component={TestConnection} />
         <Route path="*">
           <Redirect to="/" />
         </Route>

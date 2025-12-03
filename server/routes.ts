@@ -50,6 +50,16 @@ const isGuardOrAdmin: RequestHandler = async (req: any, res, next) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
+  // Health check endpoint - no auth required
+  app.get('/api/health', (req, res) => {
+    console.log('🏥 Health check from', req.get('origin'));
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV 
+    });
+  });
+
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       // Support both OIDC (claims.sub) and local auth (id)
