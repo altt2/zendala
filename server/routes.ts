@@ -136,13 +136,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Try to validate by password first (preferred), then by code (fallback)
       if (password) {
-        const passwordStr = String(password).trim().toUpperCase();
-        console.log(`[QR Validation] Searching by password: "${passwordStr}"`);
-        qrCode = await storage.getQrCodeByPassword(passwordStr);
+        const passwordStr = String(password).trim();
+        const passwordUpperCase = passwordStr.toUpperCase();
         
-        // If not found by password, try searching by code (in case QR was scanned)
+        console.log(`[QR Validation] Received input: "${passwordStr}"`);
+        console.log(`[QR Validation] Searching by password (uppercase): "${passwordUpperCase}"`);
+        qrCode = await storage.getQrCodeByPassword(passwordUpperCase);
+        
+        // If not found by password, try searching by code as-is (UUIDs are case-sensitive)
         if (!qrCode) {
-          console.log(`[QR Validation] Password not found, trying as code: "${passwordStr}"`);
+          console.log(`[QR Validation] Password not found, trying as code (original case): "${passwordStr}"`);
           qrCode = await storage.getQrCodeByCode(passwordStr);
         }
       } else if (code) {
