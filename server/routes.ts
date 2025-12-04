@@ -129,10 +129,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/debug/qr-codes", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const allCodes = await storage.getAllQrCodes();
+      res.json({
+        count: allCodes.length,
+        codes: allCodes.map(qr => ({
+          id: qr.id,
+          code: qr.code,
+          accessPassword: qr.accessPassword,
+          visitorName: qr.visitorName,
+          isUsed: qr.isUsed,
+          createdAt: qr.createdAt,
+        }))
+      });
+    } catch (error) {
+      console.error("Error fetching debug QR codes:", error);
+      res.status(500).json({ message: "Failed to fetch debug data" });
+    }
+  });
+
   app.post("/api/qr-codes/validate", isAuthenticated, isGuardOrAdmin, async (req: any, res) => {
     try {
       let { code, password } = req.body;
       let qrCode;
+      
+      console.log(`[QR Validation] Request body:`, JSON.stringify(req.body));
       
       // Try to validate by password first (preferred), then by code (fallback)
       if (password) {
@@ -142,11 +164,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[QR Validation] Received input: "${passwordStr}"`);
         console.log(`[QR Validation] Searching by password (uppercase): "${passwordUpperCase}"`);
         qrCode = await storage.getQrCodeByPassword(passwordUpperCase);
+        console.log(`[QR Validation] Result from password search:`, qrCode ? `Found ${qrCode.id}` : "Not found");
         
         // If not found by password, try searching by code as-is (UUIDs are case-sensitive)
         if (!qrCode) {
           console.log(`[QR Validation] Password not found, trying as code (original case): "${passwordStr}"`);
           qrCode = await storage.getQrCodeByCode(passwordStr);
+          console.log(`[QR Validation] Result from code search:`, qrCode ? `Found ${qrCode.id}` : "Not found");
         }
       } else if (code) {
         code = String(code).trim();

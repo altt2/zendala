@@ -23,6 +23,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   createQrCode(qrCode: InsertQrCode): Promise<QrCode>;
   getQrCodesByUser(userId: string): Promise<QrCode[]>;
+  getAllQrCodes(): Promise<QrCode[]>;
   getQrCodeByCode(code: string): Promise<QrCode | undefined>;
   getQrCodeByPassword(password: string): Promise<QrCode | undefined>;
   updateQrCodeUsed(id: string): Promise<void>;
@@ -150,6 +151,13 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(qrCodes)
       .where(eq(qrCodes.createdById, userId))
+      .orderBy(desc(qrCodes.createdAt));
+  }
+
+  async getAllQrCodes(): Promise<QrCode[]> {
+    return await db
+      .select()
+      .from(qrCodes)
       .orderBy(desc(qrCodes.createdAt));
   }
 
