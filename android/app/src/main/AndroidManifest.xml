@@ -38,4 +38,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Declare camera as available (not required) so Play/manifest checks are ok on devices without cameras -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

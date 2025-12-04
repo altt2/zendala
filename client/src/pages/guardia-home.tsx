@@ -54,6 +54,27 @@ export default function GuardiaHome() {
   const [vehiclePlates, setVehiclePlates] = useState("");
   const [notesText, setNotesText] = useState("");
 
+  // Request camera permission by attempting getUserMedia (works in WebView and browsers).
+  // If it succeeds, we immediately stop the tracks and return true. Otherwise return false.
+  async function ensureCameraPermission(): Promise<boolean> {
+    try {
+      if (navigator && (navigator as any).mediaDevices && (navigator as any).mediaDevices.getUserMedia) {
+        const stream = await (navigator as any).mediaDevices.getUserMedia({ video: true });
+        if (stream && stream.getTracks) {
+          stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+        }
+        return true;
+      }
+    } catch (err: any) {
+      // Common errors: NotAllowedError, PermissionDeniedError
+      console.warn('Camera permission denied or getUserMedia failed:', err?.message || err);
+      return false;
+    }
+
+    // If getUserMedia is not available, deny permission
+    return false;
+  }
+
 
   const validateQrMutation = useMutation({
     mutationFn: async (password: string) => {
@@ -127,7 +148,18 @@ export default function GuardiaHome() {
   });
 
   const startScanning = () => {
-    setScanning(true);
+    // Ensure camera permission is granted before starting scanner
+    ensureCameraPermission().then((granted) => {
+      if (granted) {
+        setScanning(true);
+      } else {
+        toast({
+          title: "Permiso denegado",
+          description: "La aplicación necesita acceso a la cámara para escanear códigos QR",
+          variant: "destructive",
+        });
+      }
+    });
     setManualMode(false);
     setValidationResult(null);
   };
