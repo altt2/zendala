@@ -55,24 +55,26 @@ export default function GuardiaHome() {
   const [vehiclePlates, setVehiclePlates] = useState("");
   const [notesText, setNotesText] = useState("");
 
-  // Request camera permission by attempting getUserMedia (works in WebView and browsers).
-  // If it succeeds, we immediately stop the tracks and return true. Otherwise return false.
+  // Request camera permission by attempting getUserMedia with rear camera constraint
   async function ensureCameraPermission(): Promise<boolean> {
     try {
       if (navigator && (navigator as any).mediaDevices && (navigator as any).mediaDevices.getUserMedia) {
-        const stream = await (navigator as any).mediaDevices.getUserMedia({ video: true });
+        // Request rear camera specifically to avoid selection dialog on Android
+        const stream = await (navigator as any).mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: { ideal: "environment" }  // Prefer rear camera
+          } 
+        });
         if (stream && stream.getTracks) {
           stream.getTracks().forEach((t: MediaStreamTrack) => t.stop());
         }
+        console.log("Camera permission granted");
         return true;
       }
     } catch (err: any) {
-      // Common errors: NotAllowedError, PermissionDeniedError
       console.warn('Camera permission denied or getUserMedia failed:', err?.message || err);
       return false;
     }
-
-    // If getUserMedia is not available, deny permission
     return false;
   }
 
