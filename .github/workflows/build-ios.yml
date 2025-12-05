@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify Capacitor iOS is installed
+        run: ls -la node_modules/@capacitor/ios || npm install @capacitor/ios
+
       - name: Build web assets
         run: npm run build
 
@@ -36,14 +39,10 @@ jobs:
       - name: Install Cocoapods
         run: sudo gem install cocoapods
 
-      - name: Install iOS platform
+      - name: Clean and rebuild iOS platform
         run: |
-          if [ ! -d "ios" ]; then
-            npx cap add ios
-          fi
-
-      - name: Sync Capacitor iOS
-        run: npx cap sync ios
+          rm -rf ios/App/node_modules ios/App/Pods ios/App/Podfile.lock
+          npx cap sync ios
 
       - name: Setup Xcode
         run: |
